@@ -1,6 +1,6 @@
-# **Distributed Operating Systems - Project 2**
+# **Distributed Operating Systems - Project 3**
 
-## Chord--P2P_System-and-Simulation
+## Chord - P2P System and Simulation
 
 ### **Group Members-**
 * **Anurag Patil**
