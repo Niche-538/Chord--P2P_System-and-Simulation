@@ -9,7 +9,7 @@
 ### Problem Definition
 * We talked extensively in class about overlay networks and how they can be used to provide services. 
 * The goal of this project is to implement the Chord protocol and a simple object access service to prove its usefulness using Erlang and Actor Model.
-* The specification of the Chord protocol can be found in the paperChord: A Scalable Peer-to-peer Lookup Service for Internet Applicationsby Ion Stoica,  Robert  Morris,  David  Karger,  M.  Frans  Kaashoek,  Hari  Balakrishnan. https://pdos.csail.mit.edu/papers/ton:chord/paper-ton.pdfLinks to an external site.
+* The specification of the Chord protocol can be found in the paperChord: A Scalable Peer-to-peer Lookup Service for Internet Applicationsby Ion Stoica,  Robert  Morris,  David  Karger,  M.  Frans  Kaashoek,  Hari  Balakrishnan. https://pdos.csail.mit.edu/papers/ton:chord/paper-ton.pdf [Links to an external site.]
 * You can also refer to the Wikipedia page: https://en.wikipedia.org/wiki/Chord(peer-to-peer)Links to an external site.
 * The paper above, in section 2.3 contains a specification of the Chord API and of the API to be implemented by the application.
 
