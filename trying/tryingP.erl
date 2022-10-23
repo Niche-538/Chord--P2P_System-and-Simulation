@@ -71,10 +71,9 @@ actorFingerTableCreation(L, N) ->
   end.
 
 actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
-  io:fwrite("Finger Table For ~p: ~p\n", [NodeIdentity, FingerTable]),
   receive
     {createFingerTable, {L}} ->
-      io:fwrite("NodeID: ~p ~p ~p \n", [NodeIdentity, AID, L]),
+      io:fwrite("NodeID: ~p  PID: ~p \n", [NodeIdentity, AID]),
       FTable = createFingerTable(
         NodeIdentity,
         NumNodes - 1,
@@ -84,23 +83,43 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
       ),
       MID ! {actorFingerComplete,{L}},
       actor_process(NodeIdentity, NumNodes, AID, MID, FTable, RequestCounter);
-      {startChord,{NumRequests}} ->
-        communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)
+    {startChord,{NumRequests}} ->
+      communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter),
+      actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
+    {notMine,{Modulo,NumRequests}}->
+      counters:add(RequestCounter, 1, 1),
+      io:fwrite("Modulo: ~p Counter: ~p  AID: ~p \n", [Modulo, counters:get(RequestCounter, 1), AID]),
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,AID,NumRequests),
+      actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)
   end.
 
 communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)->
   case NumRequests > 0 of
     true ->
-      <<Mac:160/integer>> = crypto:hash(sha,"Pratik"),
+      <<Mac:160/integer>> = crypto:hash(sha,crypto:strong_rand_bytes(16)),
       Y = lists:flatten(io_lib:format("~40.16.0b", [Mac])),
       M16 = list_to_integer(Y, 16),
       Range = trunc(math:pow(2, NumNodes)) - 1,
       Modulo = M16 rem Range,
-      io:fwrite("Modulo: ~p\n", [Modulo]),
+      io:fwrite("Modulo: ~p FingerTable: ~p \n", [Modulo, FingerTable]),
+      io:fwrite("Random Finger Value: ~p \n", [maps:get(19, FingerTable, MID)]),
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,AID,NumRequests),
       communicateNumRequestTimes(NumRequests-1,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
     false ->
       done
   end.
+
+checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,AID,NumRequests)->
+  case NumRequests > 0 of
+    true ->
+      notaidhereYouhavetoSelect,
+      AID ! {notMine, {Modulo,NumRequests}},
+      io:fwrite("Check Yours: ~p NIDs: ~p AID: ~p FingerTable: ~p \n", [Modulo,NodeIdentity,AID,FingerTable]);
+    false ->
+      done
+  end.
+
+
 
 createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
   % multiplicant
