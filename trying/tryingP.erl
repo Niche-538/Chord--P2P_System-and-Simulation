@@ -1,83 +1,126 @@
 -module(tryingP).
--export([main/1]).
+-export([main/2]).
 -import(lists, [append/2, reverse/1]).
 
 tail_len(L) -> tail_len(L, 0).
 tail_len([], Acc) -> Acc;
 tail_len([_ | T], Acc) -> tail_len(T, Acc + 1).
 
-generateActors(N,M,MID) ->
-  generateActors(N,M, [], MID).
+generateActors(N, MID) ->
+  generateActors(N, N, [], MID).
 
 generateActors(0, _, L, _) ->
   reverse(L);
 generateActors(N, M, L, MID) ->
+  Multiplicant = trunc(math:pow(2, M) / M),
+  Cal = Multiplicant * (M - N + 1),
   generateActors(
-    N - 1, M,[spawn(fun() -> actor_process(trunc(math:pow(2, M)/M * (M-N+1)-1), M, self(), MID, #{},counters:new(1, [atomics])) end) | L], MID
+    N - 1,
+    M,
+    [
+      spawn(fun() ->
+        actor_process(
+          Cal,
+          M,
+          self(),
+          MID,
+          #{},
+          counters:new(1, [atomics])
+        )
+            end)
+      | L
+    ],
+    MID
   ).
 
-main(NumNodes) ->
+main(NumNodes,NumRequests) ->
+  MID = spawn(fun() -> master_process(counters:new(1, [atomics]),NumNodes,NumRequests)end),
+  L = generateActors(NumNodes, MID),
+  MID ! {actorList, {L}}.
 
-  MID = spawn(fun() -> master_process() end),
-  L = generateActors(NumNodes, NumNodes, MID),
-  MID ! {actorList, {L}},
-
-  X = map_attempt(),
-  io:fwrite("Map after put(): ~p\n", [X]),
-  intToList(),
-  sha_attempt().
-
-master_process() ->
+master_process(Counter,NumNodes,NumRequests) ->
   receive
-  {actorList, {L}} ->
-    commandFingerTableCreation(L,tail_len(L)),
-  master_process()
+    {actorList, {L}} ->
+      actorFingerTableCreation(L, tail_len(L)),
+      master_process(Counter,NumNodes,NumRequests);
+    {actorFingerComplete,{L}}->
+      counters:add(Counter, 1, 1),
+      case counters:get(Counter, 1) == NumNodes of
+        true ->
+          commandStartChord(L, 1, NumRequests);
+        false ->
+          done
+      end,
+      master_process(Counter,NumNodes,NumRequests)
   end.
-
-commandFingerTableCreation(L,N)->
+commandStartChord(L, N,NumRequests) ->
+  case N == tail_len(L) + 1 of
+    true ->
+     done;
+    false ->
+      lists:nth(N, L) ! {startChord,{NumRequests}},
+      commandStartChord(L,N+1,NumRequests)
+  end.
+actorFingerTableCreation(L, N) ->
   case N > 0 of
     true ->
       lists:nth(N, L) ! {createFingerTable, {L}},
-      commandFingerTableCreation(L,N-1);
+      actorFingerTableCreation(L, N - 1);
     false ->
       done
   end.
 
-actor_process(NodeId, NumNodes, AID, MID, FingerTable, RequestCounter)->
+actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
+  io:fwrite("Finger Table For ~p: ~p\n", [NodeIdentity, FingerTable]),
   receive
     {createFingerTable, {L}} ->
-      io:fwrite("NodeID: ~p ~p ~p \n", [NodeId,AID,L]),
-      createFingerTable(NodeId,NumNodes, AID, L, FingerTable);
-%%      io:fwrite("FingerTable Update: ~p\n", [FT]);
-    {updateFT, {NodeId, AID, FingerTable}} ->
-      io:fwrite("Updated FT: ~p\n", [FingerTable])
+      io:fwrite("NodeID: ~p ~p ~p \n", [NodeIdentity, AID, L]),
+      FTable = createFingerTable(
+        NodeIdentity,
+        NumNodes - 1,
+        AID,
+        L,
+        FingerTable
+      ),
+      MID ! {actorFingerComplete,{L}},
+      actor_process(NodeIdentity, NumNodes, AID, MID, FTable, RequestCounter);
+      {startChord,{NumRequests}} ->
+        communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)
   end.
 
-createFingerTable(NodeId, N, AID, L, FingerTable)->
-  case N > 0 of
+communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)->
+  case NumRequests > 0 of
     true ->
-      maps:put(key2, "Actor2_PID", FingerTable);
+      <<Mac:160/integer>> = crypto:hash(sha,"Pratik"),
+      Y = lists:flatten(io_lib:format("~40.16.0b", [Mac])),
+      io:fwrite("Sha string: ~p\n", [Y]),
+      M = list_to_integer(Y, 16),
+      io:fwrite("List to integer sha: ~p\n", [M]),
+      Modulo = M rem 127,
+      io:fwrite("Modulo: ~p\n", [Modulo]),
+      communicateNumRequestTimes(NumRequests-1,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
     false ->
-      AID ! {updateFT, {NodeId, AID, FingerTable}}
-  end,
-  createFingerTable(NodeId, N-1, AID, L, FingerTable).
+      done
+  end.
 
-map_attempt() ->
-  Map1 = #{key1 => 1, val1 => 'Actor_PID'},
-  io:fwrite("Map before put(): ~p\n", [Map1]),
-  maps:put(key2, "Actor2_PID", Map1).
-
-intToList() ->
-  H = integer_to_list(30, 16),
-  io:fwrite("Int to hex: ~p\n", [H]),
-  M = list_to_integer(H, 16),
-  io:fwrite("List to integer: ~p\n", [M]).
-
-sha_attempt() ->
-  <<Mac:160/integer>> = crypto:hash(sha, "Test String"),
-  Y = lists:flatten(io_lib:format("~40.16.0b", [Mac])),
-  io:fwrite("Sha string: ~p\n", [Y]),
-  M = list_to_integer(Y, 16),
-  io:fwrite("List to integer sha: ~p\n", [M]),
-  Modulo = M rem 127,
-  io:fwrite("Modulo: ~p\n", [Modulo]).
+createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
+  % multiplicant
+  LLen = tail_len(L),
+  Mlt = trunc(math:pow(2, LLen) / LLen),
+  MaxNode = Mlt * LLen,
+  case N >= 0 of
+    true ->
+      FTKey = trunc(NodeIdentity + math:pow(2, N)),
+      % Immediate Successor
+      ImS = Mlt * (1 + trunc(FTKey / Mlt)),
+      case ((ImS > 0) and (ImS < Mlt)) or (ImS > MaxNode) of
+        true ->
+          FT = maps:put(FTKey, lists:nth(1, L), FingerTable),
+          createFingerTable(NodeIdentity, N - 1, AID, L, FT);
+        false ->
+          FT = maps:put(FTKey, lists:nth(trunc(ImS / Mlt), L), FingerTable),
+          createFingerTable(NodeIdentity, N - 1, AID, L, FT)
+      end;
+    false ->
+      FingerTable
+  end.
