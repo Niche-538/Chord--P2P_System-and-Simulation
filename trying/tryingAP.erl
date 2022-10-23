@@ -58,19 +58,16 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
     receive
         {createFingerTable, {L}} ->
             io:fwrite("NodeID: ~p ~p ~p \n", [NodeIdentity, AID, L]),
-            createFingerTable(NodeIdentity, NumNodes, AID, L, FingerTable);
-        {updatedFT, {NodeIdentity, AID, FingerTable}} ->
-            io:fwrite("Updated FT: ~p\n", [FingerTable])
+            FTable = createFingerTable(NodeIdentity, NumNodes, AID, L, FingerTable),
+            io:fwrite("Finger Table Ithe Aahe: ~p\n", [FTable])
     end.
 
 createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
     case N > 0 of
         true ->
             S = trunc(NodeIdentity + math:pow(2, N)),
-            % io:fwrite("Key in  of ~p is ~p\n", [AID, S]),
             FT = maps:put(S, "Actor2_PID", FingerTable),
             createFingerTable(NodeIdentity, N - 1, AID, L, FT);
         false ->
-            io:fwrite("Updated FT before Send: ~p \t AID:~p\n", [FingerTable, AID]),
-            AID ! {updatedFT, {NodeIdentity, AID, FingerTable}}
+            FingerTable
     end.
