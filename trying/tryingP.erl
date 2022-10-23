@@ -1,5 +1,4 @@
 -module(tryingP).
--compile(export_all).
 -export([main/1]).
 -import(lists, [append/2, reverse/1]).
 
@@ -14,7 +13,7 @@ generateActors(0, _, L, _) ->
   reverse(L);
 generateActors(N, M, L, MID) ->
   generateActors(
-    N - 1, M,[spawn(fun() -> actor_process((math:pow(2, M)/M * N -1), MID, #{},counters:new(1, [atomics])) end) | L], MID
+    N - 1, M,[spawn(fun() -> actor_process(trunc(math:pow(2, M)/M * (M-N+1)-1), M, self(), MID, #{key1 => 1, val1 => 'Actor_PID'},counters:new(1, [atomics])) end) | L], MID
   ).
 
 main(NumNodes) ->
@@ -29,11 +28,40 @@ main(NumNodes) ->
   sha_attempt().
 
 master_process() ->
-  io:fwrite("Master\n").
+  receive
+  {actorList, {L}} ->
+    commandFingerTableCreation(L,tail_len(L)),
+  master_process()
+  end.
 
-actor_process(NodeId, MID, FingerTable, RequestCounter)->
-  io:fwrite("NodeID: ~p\n", [NodeId]),
-  io:fwrite("ActorMap: ~p\n", [FingerTable]).
+commandFingerTableCreation(L,N)->
+  case N > 0 of
+    true ->
+      lists:nth(N, L) ! {createFingerTable, {L}},
+      commandFingerTableCreation(L,N-1);
+    false ->
+      done
+  end.
+
+
+actor_process(NodeId, NumNodes, AID, MID, FingerTable, RequestCounter)->
+  receive
+    {createFingerTable, {L}} ->
+      io:fwrite("NodeID: ~p ~p ~p \n", [NodeId,AID,L]),
+      createFingerTable(NodeId,NumNodes, AID, L, FingerTable),
+      io:fwrite("FingerTable: ~p\n", [FingerTable])
+  end.
+
+createFingerTable(NodeId, N, AID, L, FingerTable)->
+  case N > 0 of
+    true ->
+      lists:nth(N, L) ! {createFingerTable, {L}},
+      maps:put(key2, "Actor2_PID", FingerTable),
+      io:fwrite("FingerTable: ~p\n", [FingerTable]),
+      createFingerTable(NodeId, N-1, AID, L, FingerTable);
+    false ->
+      done
+  end.
 
 map_attempt() ->
   Map1 = #{key1 => 1, val1 => 'Actor_PID'},
