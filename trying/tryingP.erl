@@ -89,7 +89,7 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
     {notMine,{Modulo,NumRequests}}->
       counters:add(RequestCounter, 1, 1),
       io:fwrite("Modulo: ~p Counter: ~p  AID: ~p \n", [Modulo, counters:get(RequestCounter, 1), AID]),
-      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,AID,NumRequests),
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes),
       actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)
   end.
 
@@ -102,19 +102,19 @@ communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerT
       Range = trunc(math:pow(2, NumNodes)) - 1,
       Modulo = M16 rem Range,
       io:fwrite("Modulo: ~p FingerTable: ~p \n", [Modulo, FingerTable]),
-      io:fwrite("Random Finger Value: ~p \n", [maps:get(19, FingerTable, MID)]),
-      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,AID,NumRequests),
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes),
       communicateNumRequestTimes(NumRequests-1,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
     false ->
       done
   end.
 
-checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,AID,NumRequests)->
-  case NumRequests > 0 of
+checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes)->
+  case NumNodes > 0 of
     true ->
       notaidhereYouhavetoSelect,
-      AID ! {notMine, {Modulo,NumRequests}},
-      io:fwrite("Check Yours: ~p NIDs: ~p AID: ~p FingerTable: ~p \n", [Modulo,NodeIdentity,AID,FingerTable]);
+      io:fwrite("Modulo: ~p Node Identity: ~p FingerTable: ~p\n", [Modulo,NodeIdentity,FingerTable]),
+      %%      AID ! {notMine, {Modulo,NumRequests}},
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes-1);
     false ->
       done
   end.
