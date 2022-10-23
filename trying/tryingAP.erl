@@ -55,7 +55,6 @@ actorFingerTableCreation(L, N) ->
     end.
 
 actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
-    io:fwrite("Just removing Warnings: ~p ~p ~p\n", [NodeIdentity, MID, RequestCounter]),
     receive
         {createFingerTable, {L}} ->
             io:fwrite("NodeID: ~p ~p ~p \n", [NodeIdentity, AID, L]),
