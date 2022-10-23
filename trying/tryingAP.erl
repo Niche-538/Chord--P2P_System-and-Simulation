@@ -12,14 +12,13 @@ generateActors(N, MID) ->
 generateActors(0, _, L, _) ->
     reverse(L);
 generateActors(N, M, L, MID) ->
-    NodeID = trunc(math:pow(2, M) / M * (M - N + 1) - 1),
     generateActors(
         N - 1,
         M,
         [
             spawn(fun() ->
                 actor_process(
-                    NodeID,
+                    trunc(math:pow(2, M) / M) * N,
                     M,
                     self(),
                     MID,
@@ -40,15 +39,15 @@ main(NumNodes) ->
 master_process() ->
     receive
         {actorList, {L}} ->
-            commandFingerTableCreation(L, tail_len(L)),
+            actorFingerTableCreation(L, tail_len(L)),
             master_process()
     end.
 
-commandFingerTableCreation(L, N) ->
+actorFingerTableCreation(L, N) ->
     case N > 0 of
         true ->
             lists:nth(N, L) ! {createFingerTable, {L}},
-            commandFingerTableCreation(L, N - 1);
+            actorFingerTableCreation(L, N - 1);
         false ->
             done
     end.
@@ -58,14 +57,15 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
     receive
         {createFingerTable, {L}} ->
             io:fwrite("NodeID: ~p ~p ~p \n", [NodeIdentity, AID, L]),
-            FTable = createFingerTable(NodeIdentity, NumNodes, AID, L, FingerTable),
-            io:fwrite("Finger Table Ithe Aahe: ~p\n", [FTable])
+            FTable = createFingerTable(NodeIdentity, NumNodes - 1, AID, L, FingerTable),
+            io:fwrite("Finger Table For ~p: ~p\n", [NodeIdentity, FTable])
     end.
 
 createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
-    case N > 0 of
+    case N >= 0 of
         true ->
             S = trunc(NodeIdentity + math:pow(2, N)),
+
             FT = maps:put(S, "Actor2_PID", FingerTable),
             createFingerTable(NodeIdentity, N - 1, AID, L, FT);
         false ->
