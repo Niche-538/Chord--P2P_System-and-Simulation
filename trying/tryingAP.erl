@@ -57,22 +57,32 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
     receive
         {createFingerTable, {L}} ->
             io:fwrite("NodeID: ~p ~p ~p \n", [NodeIdentity, AID, L]),
-            FTable = createFingerTable(NodeIdentity, NumNodes - 1, AID, L, FingerTable),
+            FTable = createFingerTable(
+                NodeIdentity,
+                NumNodes - 1,
+                AID,
+                tail_len(L),
+                FingerTable
+            ),
             io:fwrite("Finger Table For ~p: ~p\n", [NodeIdentity, FTable])
     end.
 
-createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
+createFingerTable(NodeIdentity, N, AID, LLen, FingerTable) ->
+    % multiplicant
+    Mlt = trunc(math:pow(2, LLen) / LLen),
+    MaxNode = Mlt * LLen,
     case N >= 0 of
         true ->
-            S = trunc(NodeIdentity + math:pow(2, N)),
-            X = 18 * (1 + trunc(S / 18)),
-            case ((X > 0) and (X < 18)) or (X > 126) of
+            FTKey = trunc(NodeIdentity + math:pow(2, N)),
+            % Immediate Successor
+            ImS = Mlt * (1 + trunc(FTKey / Mlt)),
+            case ((ImS > 0) and (ImS < Mlt)) or (ImS > MaxNode) of
                 true ->
-                    FT = maps:put(S, 18, FingerTable),
-                    createFingerTable(NodeIdentity, N - 1, AID, L, FT);
+                    FT = maps:put(FTKey, Mlt, FingerTable),
+                    createFingerTable(NodeIdentity, N - 1, AID, LLen, FT);
                 false ->
-                    FT = maps:put(S, X, FingerTable),
-                    createFingerTable(NodeIdentity, N - 1, AID, L, FT)
+                    FT = maps:put(FTKey, ImS, FingerTable),
+                    createFingerTable(NodeIdentity, N - 1, AID, LLen, FT)
             end;
         false ->
             FingerTable
