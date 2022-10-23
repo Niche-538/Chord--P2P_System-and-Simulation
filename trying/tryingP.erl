@@ -13,7 +13,7 @@ generateActors(0, _, L, _) ->
   reverse(L);
 generateActors(N, M, L, MID) ->
   generateActors(
-    N - 1, M,[spawn(fun() -> actor_process(trunc(math:pow(2, M)/M * (M-N+1)-1), M, self(), MID, #{key1 => 1, val1 => 'Actor_PID'},counters:new(1, [atomics])) end) | L], MID
+    N - 1, M,[spawn(fun() -> actor_process(trunc(math:pow(2, M)/M * (M-N+1)-1), M, self(), MID, #{},counters:new(1, [atomics])) end) | L], MID
   ).
 
 main(NumNodes) ->
@@ -48,19 +48,17 @@ actor_process(NodeId, NumNodes, AID, MID, FingerTable, RequestCounter)->
   receive
     {createFingerTable, {L}} ->
       io:fwrite("NodeID: ~p ~p ~p \n", [NodeId,AID,L]),
-      createFingerTable(NodeId,NumNodes, AID, L, FingerTable),
-      io:fwrite("FingerTable: ~p\n", [FingerTable])
+      FT = createFingerTable(NodeId,NumNodes, AID, L, FingerTable),
+      io:fwrite("FingerTable Update: ~p\n", [FT])
   end.
 
 createFingerTable(NodeId, N, AID, L, FingerTable)->
   case N > 0 of
     true ->
-      lists:nth(N, L) ! {createFingerTable, {L}},
       maps:put(key2, "Actor2_PID", FingerTable),
-      io:fwrite("FingerTable: ~p\n", [FingerTable]),
       createFingerTable(NodeId, N-1, AID, L, FingerTable);
     false ->
-      done
+      maps:put(key3, "Actor3333_PID", FingerTable)
   end.
 
 map_attempt() ->
