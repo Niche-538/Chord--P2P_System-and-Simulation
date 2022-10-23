@@ -65,9 +65,15 @@ createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
     case N >= 0 of
         true ->
             S = trunc(NodeIdentity + math:pow(2, N)),
-
-            FT = maps:put(S, "Actor2_PID", FingerTable),
-            createFingerTable(NodeIdentity, N - 1, AID, L, FT);
+            X = 18 * (1 + trunc(S / 18)),
+            case ((X > 0) and (X < 18)) or (X > 126) of
+                true ->
+                    FT = maps:put(S, 18, FingerTable),
+                    createFingerTable(NodeIdentity, N - 1, AID, L, FT);
+                false ->
+                    FT = maps:put(S, X, FingerTable),
+                    createFingerTable(NodeIdentity, N - 1, AID, L, FT)
+            end;
         false ->
             FingerTable
     end.
