@@ -93,10 +93,9 @@ communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerT
     true ->
       <<Mac:160/integer>> = crypto:hash(sha,"Pratik"),
       Y = lists:flatten(io_lib:format("~40.16.0b", [Mac])),
-      io:fwrite("Sha string: ~p\n", [Y]),
-      M = list_to_integer(Y, 16),
-      io:fwrite("List to integer sha: ~p\n", [M]),
-      Modulo = M rem 127,
+      M16 = list_to_integer(Y, 16),
+      Range = trunc(math:pow(2, NumNodes)) - 1,
+      Modulo = M16 rem Range,
       io:fwrite("Modulo: ~p\n", [Modulo]),
       communicateNumRequestTimes(NumRequests-1,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
     false ->
