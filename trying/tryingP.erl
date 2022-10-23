@@ -43,23 +43,24 @@ commandFingerTableCreation(L,N)->
       done
   end.
 
-
 actor_process(NodeId, NumNodes, AID, MID, FingerTable, RequestCounter)->
   receive
     {createFingerTable, {L}} ->
       io:fwrite("NodeID: ~p ~p ~p \n", [NodeId,AID,L]),
-      FT = createFingerTable(NodeId,NumNodes, AID, L, FingerTable),
-      io:fwrite("FingerTable Update: ~p\n", [FT])
+      createFingerTable(NodeId,NumNodes, AID, L, FingerTable);
+%%      io:fwrite("FingerTable Update: ~p\n", [FT]);
+    {updateFT, {NodeId, AID, FingerTable}} ->
+      io:fwrite("Updated FT: ~p\n", [FingerTable])
   end.
 
 createFingerTable(NodeId, N, AID, L, FingerTable)->
   case N > 0 of
     true ->
-      maps:put(key2, "Actor2_PID", FingerTable),
-      createFingerTable(NodeId, N-1, AID, L, FingerTable);
+      maps:put(key2, "Actor2_PID", FingerTable);
     false ->
-      maps:put(key3, "Actor3333_PID", FingerTable)
-  end.
+      AID ! {updateFT, {NodeId, AID, FingerTable}}
+  end,
+  createFingerTable(NodeId, N-1, AID, L, FingerTable).
 
 map_attempt() ->
   Map1 = #{key1 => 1, val1 => 'Actor_PID'},
