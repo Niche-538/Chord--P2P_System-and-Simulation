@@ -68,17 +68,16 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
     end.
 
 createFingerTable(NodeIdentity, N, AID, LLen, FingerTable) ->
-    % multiplicant
-    Mlt = trunc(math:pow(2, LLen) / LLen),
-    MaxNode = Mlt * LLen,
+    Multiplicant = trunc(math:pow(2, LLen) / LLen),
+    MaxNode = Multiplicant * LLen,
     case N >= 0 of
         true ->
             FTKey = trunc(NodeIdentity + math:pow(2, N)),
             % Immediate Successor
-            ImS = Mlt * (1 + trunc(FTKey / Mlt)),
-            case ((ImS > 0) and (ImS < Mlt)) or (ImS > MaxNode) of
+            ImS = Multiplicant * (1 + trunc(FTKey / Multiplicant)),
+            case ((ImS > 0) and (ImS < Multiplicant)) or (ImS > MaxNode) of
                 true ->
-                    FT = maps:put(FTKey, Mlt, FingerTable),
+                    FT = maps:put(FTKey, Multiplicant, FingerTable),
                     createFingerTable(NodeIdentity, N - 1, AID, LLen, FT);
                 false ->
                     FT = maps:put(FTKey, ImS, FingerTable),
