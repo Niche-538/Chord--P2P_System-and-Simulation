@@ -86,10 +86,15 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
     {startChord,{NumRequests}} ->
       communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter),
       actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
-    {notMine,{Modulo,NumRequests}}->
+    {notMine,{Modulo}}->
       counters:add(RequestCounter, 1, 1),
-      io:fwrite("Modulo: ~p Counter: ~p  AID: ~p \n", [Modulo, counters:get(RequestCounter, 1), AID]),
-      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes),
+      case Modulo == NodeIdentity of
+        true ->
+          done;
+        false ->
+          checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes, NumNodes)
+      end,
+      io:fwrite("Request Counter: ~p\n", [counters:get(RequestCounter, 1)]),
       actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)
   end.
 
@@ -102,19 +107,33 @@ communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerT
       Range = trunc(math:pow(2, NumNodes)) - 1,
       Modulo = M16 rem Range,
       io:fwrite("Modulo: ~p FingerTable: ~p \n", [Modulo, FingerTable]),
-      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes),
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes, NumNodes),
       communicateNumRequestTimes(NumRequests-1,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
     false ->
       done
   end.
 
-checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes)->
+checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes, LLen)->
   case NumNodes > 0 of
     true ->
-      notaidhereYouhavetoSelect,
-      io:fwrite("Modulo: ~p Node Identity: ~p FingerTable: ~p\n", [Modulo,NodeIdentity,FingerTable]),
-      %%      AID ! {notMine, {Modulo,NumRequests}},
-      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes-1);
+      FTK = trunc(NodeIdentity + math:pow(2, NumNodes)),
+
+      io:fwrite("Modulo: ~p FT Key: ~p Node Identity: ~p\n", [Modulo, FTK, NodeIdentity]),
+
+      case Modulo =< NodeIdentity + 1 of
+        true ->
+          maps:get(NodeIdentity+1, FingerTable) ! {notMine,{Modulo}};
+        false ->
+          done
+      end,
+
+      case FTK < Modulo of
+        true ->
+          maps:get(FTK, FingerTable) ! {notMine,{Modulo}};
+        false ->
+          continue
+      end,
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes-1, LLen);
     false ->
       done
   end.
