@@ -90,11 +90,11 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
       actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
 
     {notMine,{Modulo,NumRequests}}->
-      counters:add(RequestCounter, 1, 1),
+
       case Modulo =< (NodeIdentity+1) of
         true ->
           V = (counters:get(RequestCounter, 1)),
-          io:fwrite("AID: ~p, Total Hops: ~p\n\n", [AID, V]),
+%%          io:fwrite("AID: ~p, Total Hops: ~p\n\n", [AID, V]),
           done;
         false ->
           checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes,NumRequests,RequestCounter)
@@ -125,6 +125,7 @@ checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes, NumRequests, Req
 
       case Modulo =< (NodeIdentity + 1) of
         true ->
+          counters:add(RequestCounter, 1, 1),
           maps:get(NodeIdentity+1, FingerTable) ! {notMine,{Modulo}};
         false ->
           done

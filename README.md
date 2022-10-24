@@ -25,5 +25,8 @@
 
 ### Conclusions and Results
 
-1. What is working
+1. What is working:
+   1. We have implemented the Chord Protocol using Finger Tables for each node which is an optimized version than storing the next and previous node.
+   2. Let's see the output with an example of **7 Nodes and 10 NumRequests**.
+      1. Master Creates 7 Actor Nodes
 2. What is the largest network you managed to deal with
