@@ -71,6 +71,7 @@ actorFingerTableCreation(L, N) ->
   end.
 
 actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
+
   receive
     {createFingerTable, {L}} ->
 %%      io:fwrite("NodeID: ~p  PID: ~p \n", [NodeIdentity, AID]),
@@ -89,9 +90,11 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
       actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
 
     {notMine,{Modulo,NumRequests}}->
+      counters:add(RequestCounter, 1, 1),
       case Modulo =< (NodeIdentity+1) of
         true ->
-          io:fwrite("Total Hops: ~p\n", [counters:get(RequestCounter, 1)]),
+          V = (counters:get(RequestCounter, 1)),
+          io:fwrite("AID: ~p, Total Hops: ~p\n\n", [AID, V]),
           done;
         false ->
           checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes,NumRequests,RequestCounter)
@@ -100,6 +103,7 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
   end.
 
 communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)->
+
   case NumRequests > 0 of
     true ->
       <<Mac:160/integer>> = crypto:hash(sha,crypto:strong_rand_bytes(16)),
@@ -114,7 +118,7 @@ communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerT
       done
   end.
 
-checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes,NumRequests,RequestCounter)->
+checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes, NumRequests, RequestCounter)->
   case NumNodes > 0 of
     true ->
       FTK = trunc(NodeIdentity + math:pow(2, NumNodes)),
@@ -128,7 +132,6 @@ checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes,NumRequests,Reque
 
       case Modulo >= FTK of
         true ->
-          counters:add(RequestCounter, 1, 1),
           maps:get(FTK, FingerTable) ! {notMine,{Modulo,NumRequests}};
         false ->
           continue
