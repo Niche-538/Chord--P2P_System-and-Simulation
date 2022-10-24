@@ -42,4 +42,10 @@
 <img width="293" alt="Screenshot 2022-10-23 at 23 04 03" src="https://user-images.githubusercontent.com/54627841/197440550-ddfecf38-9ae5-4f0f-8dd8-7a53ab2f94a0.png"> <br>
 
 
-2. The largest network we managed to deal with is **2000 nodes for 1000 NumRequests**. We used Macbook Air M1 and Lenove Legion Intel i7 10 generation to run the protocol.
+2. The largest network we managed to deal with is **2000 nodes for 1000 NumRequests**. 
+3. We used Macbook Air M1 and Lenove Legion Intel i7 10 generation to run the protocol.
+4. Observation was as the number of nodes increase, the average hops increased.<br>
+![Screenshot 2022-10-23 at 23 28 12](https://user-images.githubusercontent.com/54627841/197443103-6865a353-f774-4a34-8507-c13a519b2adb.png)
+
+
+
