@@ -73,7 +73,7 @@ actorFingerTableCreation(L, N) ->
 actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
   receive
     {createFingerTable, {L}} ->
-      io:fwrite("NodeID: ~p  PID: ~p \n", [NodeIdentity, AID]),
+%%      io:fwrite("NodeID: ~p  PID: ~p \n", [NodeIdentity, AID]),
       FTable = createFingerTable(
         NodeIdentity,
         NumNodes - 1,
@@ -83,18 +83,19 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
       ),
       MID ! {actorFingerComplete,{L}},
       actor_process(NodeIdentity, NumNodes, AID, MID, FTable, RequestCounter);
+
     {startChord,{NumRequests}} ->
       communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter),
       actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
-    {notMine,{Modulo}}->
-      counters:add(RequestCounter, 1, 1),
-      case Modulo == NodeIdentity of
+
+    {notMine,{Modulo,NumRequests}}->
+      case Modulo =< (NodeIdentity+1) of
         true ->
+          io:fwrite("Total Hops: ~p\n", [counters:get(RequestCounter, 1)]),
           done;
         false ->
-          checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes, NumNodes)
+          checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes,NumRequests,RequestCounter)
       end,
-      io:fwrite("Request Counter: ~p\n", [counters:get(RequestCounter, 1)]),
       actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)
   end.
 
@@ -106,42 +107,39 @@ communicateNumRequestTimes(NumRequests,NodeIdentity, NumNodes, AID, MID, FingerT
       M16 = list_to_integer(Y, 16),
       Range = trunc(math:pow(2, NumNodes)) - 1,
       Modulo = M16 rem Range,
-      io:fwrite("Modulo: ~p FingerTable: ~p \n", [Modulo, FingerTable]),
-      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes, NumNodes),
+%%      io:fwrite("Modulo: ~p FingerTable: ~p \n", [Modulo, FingerTable]),
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes,NumRequests,RequestCounter),
       communicateNumRequestTimes(NumRequests-1,NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter);
     false ->
       done
   end.
 
-checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes, LLen)->
+checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes,NumRequests,RequestCounter)->
   case NumNodes > 0 of
     true ->
       FTK = trunc(NodeIdentity + math:pow(2, NumNodes)),
 
-      io:fwrite("Modulo: ~p FT Key: ~p Node Identity: ~p\n", [Modulo, FTK, NodeIdentity]),
-
-      case Modulo =< NodeIdentity + 1 of
+      case Modulo =< (NodeIdentity + 1) of
         true ->
           maps:get(NodeIdentity+1, FingerTable) ! {notMine,{Modulo}};
         false ->
           done
       end,
 
-      case FTK < Modulo of
+      case Modulo >= FTK of
         true ->
-          maps:get(FTK, FingerTable) ! {notMine,{Modulo}};
+          counters:add(RequestCounter, 1, 1),
+          maps:get(FTK, FingerTable) ! {notMine,{Modulo,NumRequests}};
         false ->
           continue
       end,
-      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes-1, LLen);
+      checkIsYoursOrSend(Modulo,FingerTable,NodeIdentity,NumNodes-1,NumRequests,RequestCounter);
     false ->
       done
   end.
 
 
-
 createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
-  % multiplicant
   LLen = tail_len(L),
   Mlt = trunc(math:pow(2, LLen) / LLen),
   MaxNode = Mlt * LLen,
