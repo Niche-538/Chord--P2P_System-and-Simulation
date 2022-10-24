@@ -29,4 +29,14 @@
    1. We have implemented the Chord Protocol using Finger Tables for each node which is an optimized version than storing the next and previous node.
    2. Let's see the output with an example of **7 Nodes and 10 NumRequests**.
       1. Master Creates 7 Actor Nodes
+      2. <img width="432" alt="Screenshot 2022-10-23 at 22 41 02" src="https://user-images.githubusercontent.com/54627841/197438191-07f034cc-ec0b-4428-a4c6-92e8a1faf672.png">
+      3. As we have 7 Nodes, The range of values we have is from 1-127, Hence every actor is assigned an Identifier in this range.
+      4. <img width="235" alt="Screenshot 2022-10-23 at 22 42 23" src="https://user-images.githubusercontent.com/54627841/197438261-70e5d635-a229-4855-9ec8-6876bfa4d3cb.png">
+      5. Every Actor creates a Finger Table accorfing to the protocol. Finger table stores the PID of the node whose Identifier <= CurrentID + 2^M
+      6. <img width="653" alt="Screenshot 2022-10-23 at 22 40 23" src="https://user-images.githubusercontent.com/54627841/197438074-0861c04f-3e1a-4e8f-a45a-324753cc6444.png">
+      7. After Finger Table al all actors is created, the Master signals the actors to start the protocol to send NumRequest (10 in this example) requests.
+      8. A random string is generated for each actor for insertion, the string is hashed using SHA-1 and the hash is futher divided by 2^7 to bring it in the range.
+
+
+
 2. What is the largest network you managed to deal with
