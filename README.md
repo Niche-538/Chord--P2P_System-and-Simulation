@@ -38,6 +38,9 @@
       5. A random string is generated for each actor for insertion, the string is hashed using SHA-1 and the hash is futher divided by 2^7 to bring it in the range.<br>
       <img width="585" alt="Screenshot 2022-10-23 at 22 51 14" src="https://user-images.githubusercontent.com/54627841/197439210-605a69b8-24ea-48e2-8b5f-e479d11a2bcb.png"><br>
       6. In the above screenshot, we see a hash of 75 with the actor's finger table, it with hop to the 68 as 68 is the greatest successor which is less than 75. The actor with send message to actor corresponding to 68 using PID <0.135.0>
+      7. A counter is maintained for each actor to calculate the hops required. Average Hops are calculated by dividing total interactions and is outputed on the console for each run. <br>
+<img width="293" alt="Screenshot 2022-10-23 at 23 04 03" src="https://user-images.githubusercontent.com/54627841/197440550-ddfecf38-9ae5-4f0f-8dd8-7a53ab2f94a0.png"> <br>
+
 
 
 
