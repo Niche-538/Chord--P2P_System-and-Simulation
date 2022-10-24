@@ -2,10 +2,12 @@
 -export([main/2]).
 -import(lists, [append/2, reverse/1]).
 
+% The function below is used to find the length of a list
 tail_len(L) -> tail_len(L, 0).
 tail_len([], Acc) -> Acc;
 tail_len([_ | T], Acc) -> tail_len(T, Acc + 1).
 
+% The function below is used to create a list of actors spawned over the actor_process() function
 generateActors(N, MID) ->
     generateActors(N, N, [], MID).
 
@@ -33,11 +35,13 @@ generateActors(N, M, L, MID) ->
         MID
     ).
 
+% The main method initiates all computations
 main(NumNodes, NumRequests) ->
     MID = spawn(fun() -> master_process(counters:new(1, [atomics]), NumNodes, NumRequests) end),
     L = generateActors(NumNodes, MID),
     MID ! {actorList, {L}}.
 
+% The master process initiates the creation of finger the table and the computation of hops per node.
 master_process(Counter, NumNodes, NumRequests) ->
     receive
         {actorList, {L}} ->
@@ -53,6 +57,8 @@ master_process(Counter, NumNodes, NumRequests) ->
             end,
             master_process(Counter, NumNodes, NumRequests)
     end.
+
+% Starts the Chord algorithm using the list of actors spawned above in the main function.
 commandStartChord(L, N, NumRequests) ->
     case N == tail_len(L) + 1 of
         true ->
@@ -61,6 +67,8 @@ commandStartChord(L, N, NumRequests) ->
             lists:nth(N, L) ! {startChord, {NumRequests}},
             commandStartChord(L, N + 1, NumRequests)
     end.
+
+% Calls the function that creates a finger table for every node.
 actorFingerTableCreation(L, N) ->
     case N > 0 of
         true ->
@@ -70,10 +78,10 @@ actorFingerTableCreation(L, N) ->
             done
     end.
 
+% This function contains all functions an actor performs in the algorithm
 actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
     receive
         {createFingerTable, {L}} ->
-            %%      io:fwrite("NodeID: ~p  PID: ~p \n", [NodeIdentity, AID]),
             FTable = createFingerTable(
                 NodeIdentity,
                 NumNodes - 1,
@@ -91,6 +99,7 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
         {notMine, {Modulo, NumRequests}} ->
             case Modulo =< (NodeIdentity + 1) of
                 true ->
+
                     V = (counters:get(RequestCounter, 1)/(NumNodes*NumRequests)),
                               io:fwrite("Average Hops: ~p\n\n", [V]),
                     done;
@@ -102,6 +111,7 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
             actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter)
     end.
 
+% Calculates SHA1 hash of a message and keeps track of the number of requests made for a node
 communicateNumRequestTimes(
     NumRequests, NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter
 ) ->
@@ -149,6 +159,7 @@ checkIsYoursOrSend(Modulo, FingerTable, NodeIdentity, NumNodes, NumRequests, Req
             done
     end.
 
+% Creates a finger table for every node
 createFingerTable(NodeIdentity, N, AID, L, FingerTable) ->
     LLen = tail_len(L),
     Mlt = trunc(math:pow(2, LLen) / LLen),
