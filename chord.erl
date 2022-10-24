@@ -91,8 +91,8 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
         {notMine, {Modulo, NumRequests}} ->
             case Modulo =< (NodeIdentity + 1) of
                 true ->
-                    V = (counters:get(RequestCounter, 1)),
-                    %%          io:fwrite("AID: ~p, Total Hops: ~p\n\n", [AID, V]),
+                    V = (counters:get(RequestCounter, 1)/(NumNodes*NumRequests)),
+                              io:fwrite("Average Hops: ~p\n\n", [V]),
                     done;
                 false ->
                     checkIsYoursOrSend(
@@ -112,7 +112,7 @@ communicateNumRequestTimes(
             M16 = list_to_integer(Y, 16),
             Range = trunc(math:pow(2, NumNodes)) - 1,
             Modulo = M16 rem Range,
-            %%      io:fwrite("Modulo: ~p FingerTable: ~p \n", [Modulo, FingerTable]),
+                  io:fwrite("Random String Hashed: ~p FingerTable: ~p \n", [Modulo, FingerTable]),
             checkIsYoursOrSend(
                 Modulo, FingerTable, NodeIdentity, NumNodes, NumRequests, RequestCounter
             ),
