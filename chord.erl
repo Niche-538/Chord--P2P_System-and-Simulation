@@ -99,9 +99,8 @@ actor_process(NodeIdentity, NumNodes, AID, MID, FingerTable, RequestCounter) ->
         {notMine, {Modulo, NumRequests}} ->
             case Modulo =< (NodeIdentity + 1) of
                 true ->
-
                     V = (counters:get(RequestCounter, 1)/(NumNodes*NumRequests)),
-                              io:fwrite("Average Hops: ~p\n\n", [V]),
+                    io:fwrite("Average Hops: ~p\n\n", [V]),
                     done;
                 false ->
                     checkIsYoursOrSend(
